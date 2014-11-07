@@ -151,6 +151,7 @@ public class PeakExtractor {
                 System.out.println("size peakMap:"+peakMap.size());
 //                System.out.println("yes:"+yes+" no:"+no);
                 logger.writeMapLog(getPeakMap());
+                logger.closeLogWriter();
                 java.util.Date date = new java.util.Date();
                 System.out.println("end of processing: "+ new Timestamp(date.getTime()));
             }

@@ -92,19 +92,11 @@ public class PeakLogger {
     }
 
     public void writeLogLine(List<SpectralPeakProcessor.SpectralPeak> peakList, int lineNumber) {
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(new BufferedWriter(new FileWriter(logPath, true)));
-            for (SpectralPeakProcessor.SpectralPeak sp : peakList) {
-                String s = lineNumber + " " + sp.getBin() + " " + sp.getFrequencyInHertz() + " " + sp.getMagnitude();
-                writer.println(s);
-                sp.setTimeStamp(lineNumber); //todo: qui non serve a niente ma l'idea non è sbagliata
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-        try { writer.close(); } catch (Exception ex) {}
-    }
+        for (SpectralPeakProcessor.SpectralPeak sp : peakList) {
+            String s = lineNumber + " " + sp.getBin() + " " + sp.getFrequencyInHertz() + " " + sp.getMagnitude();
+            logWriter.println(s);
+            sp.setTimeStamp(lineNumber); //todo: qui non serve a niente ma l'idea non è sbagliata
+        }
     }
 
     public void writeMapLog(ArrayListMultimap<Integer, SpectralPeakProcessor.SpectralPeak> peakMap) {
@@ -161,9 +153,17 @@ public class PeakLogger {
         rWriter.println(timeDifference);
     }
 
-    public void closeRLog() {
+    public void closeRWriter() {
         try {
             this.rWriter.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void closeLogWriter() {
+        try {
+            this.logWriter.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

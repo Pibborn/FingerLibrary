@@ -5,7 +5,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
@@ -92,7 +91,7 @@ public class FingerprintGenerator {
             int time1 = timeList.get(i).intValue();
             logHashGenerator.setBin1(binList.get(i).intValue());
             logHashGenerator.setTime1(timeList.get(i).intValue());
-            for (int j = 1; j < 20; j++) {
+            for (int j = 1; j < 10; j++) {
                 if (i + j >= timeList.size()) break;
                 double frequency2 = frequencyList.get(i + j);
                 if (Math.abs(frequency1 - frequency2) < 1250) { //target zone
@@ -123,7 +122,7 @@ public class FingerprintGenerator {
             int time1 = timeList.get(i).intValue();
             logHashGenerator.setBin1(binList.get(i).intValue());
             logHashGenerator.setTime1(timeList.get(i).intValue());
-            for (int j = 1; j < 20; j++) { //todo?: sostituire con un while per aumentare i solo se i due punti sono nella target zone
+            for (int j = 1; j < 10; j++) { //todo?: sostituire con un while per aumentare i solo se i due punti sono nella target zone
                 if (i + j >= timeList.size()) break;
                 double frequency2 = frequencyList.get(i + j);
                 if (Math.abs(frequency1 - frequency2) < 1250) { //target zone
@@ -163,7 +162,7 @@ public class FingerprintGenerator {
                 logger.writeHistogramLine(timeDifference);
             }
         }
-        logger.closeRLog();
+        logger.closeRWriter();
         int max = 0;
         int maxIndex = 0;
         for(int i = 0; i < matchArr.length; i++) {
