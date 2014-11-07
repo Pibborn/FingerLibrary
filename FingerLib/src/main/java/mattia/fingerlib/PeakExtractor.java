@@ -12,6 +12,7 @@ import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
 import be.tarsos.dsp.SpectralPeakProcessor;
+import be.tarsos.dsp.filters.HighPass;
 import be.tarsos.dsp.io.PipedAudioStream;
 import be.tarsos.dsp.io.TarsosDSPAudioInputStream;
 
@@ -43,8 +44,11 @@ public class PeakExtractor {
         final int sampleRate = 22050;
         final int fftsize = 1024;
         final int overlap = fftsize/2; //25% overlap
-        final float[] bandsSize = {0.5f, 0.5f, 1, 1.5f, 1.5f, 1.5f, 1, 1, 1};
-        final float[] bandsSize2 = {1, 2.5f, 1.5f, 1};
+//        final float[] bandsSize = {0.5f, 0.5f, 1, 1.5f, 1.5f, 1.5f, 1, 1, 1};
+//        final float[] bandsSize = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+        final float[] bandsSize = {0, 3, 0, 0, 0, 0, 0, 0, 0};
+
+        final float[] bandsSize2 = {1, 2.5f, 2.5f, 1};
 
         //set up oggetti: stream, dispatcher, spectralfollower
         DirectoryInfo dirInfo = DirectoryInfo.getInstance();
@@ -57,7 +61,7 @@ public class PeakExtractor {
         }
         TarsosDSPAudioInputStream inputStream = audioInput.getMonoStream(sampleRate);
         AudioDispatcher dispatcher = new AudioDispatcher(inputStream, fftsize, overlap);
-//        final HighPass highPassFilter = new HighPass(4000, 44100);
+//        final HighPass highPassFilter = new HighPass(4000, 22050);
 //        dispatcher.addAudioProcessor(highPassFilter);
         final SpectralPeakProcessor spectralFollower = new SpectralPeakProcessor(fftsize, overlap, 22050); //fftsize, overlap, samplerate
         dispatcher.addAudioProcessor(spectralFollower);

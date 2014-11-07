@@ -62,7 +62,7 @@ public class FingerprintGenerator {
 
         //estrazione picchi e scrittura del log (nascosta)
         PeakExtractor extractorNullFilter = new PeakExtractor(track.getName(), (float) 1.8, noiseFilter, matching);
-        extractorNullFilter.extract(10);
+        extractorNullFilter.extract(1);
         Multimap<Integer, SpectralPeakProcessor.SpectralPeak> peakMap;
 
         //parsing del log
