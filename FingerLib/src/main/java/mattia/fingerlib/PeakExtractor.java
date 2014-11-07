@@ -91,57 +91,57 @@ public class PeakExtractor {
                 List<SpectralPeakProcessor.SpectralPeak> peakList;
                 List<SpectralPeakProcessor.SpectralPeak> peakListFiltered = new ArrayList<SpectralPeakProcessor.SpectralPeak>();
 
-                peakList = SpectralPeakProcessor.findWeightedPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), bandsSize, 15, localMaxima, 10, 20);
-//                peakList = SpectralPeakProcessor.findPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), localMaxima, 10, 20);
+//                peakList = SpectralPeakProcessor.findWeightedPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), bandsSize, 15, localMaxima, 10, 20);
+                peakList = SpectralPeakProcessor.findPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), localMaxima, 10, 20);
 
                 //filtering picchi in base al volume
-//                if (peakList.size() > 1) {
+                if (peakList.size() > 1) {
 //                    float threshold = peakPercentile(peakList, 0.95);
-//                    float threshold = 5;
-//                    for (SpectralPeakProcessor.SpectralPeak sp : peakList) {
-//                        if (sp.getMagnitude() >= threshold) {
-//                            peakListFiltered.add(sp);
-//                        }
-//                    }
-//                    logger.writeLogLine(peakList, i);
-//                }
-//                else {
-                    int j = 0;
-
-                    for (float bandSize : bandsSize) {
-                        TimeBandPair timeBandPair = new TimeBandPair(i/timeGranularity, j);
-                        int hash = timeBandPair.generateHash();
-//                        System.out.println("event:"+i+" band:"+j+" hash:"+hash);
-                        List<SpectralPeakProcessor.SpectralPeak> peakCompList = peakMap.get(hash);
-                        for (SpectralPeakProcessor.SpectralPeak peak : peakList) {
-                            peak.setTimeStamp(i);
-                            if (!isInBand(peak, j)) {
-                                continue;
-                            }
-                            if (peakCompList.size() == 0) {
-                                peakMap.put(hash, peak);
-                            }
-                            else {
-                                for (int k = 0; k < peakCompList.size(); k++) {
-                                    SpectralPeakProcessor.SpectralPeak peakComp = peakCompList.get(k);
-                                    if (peakCompList.size() < bandSize) {
-                                        peakMap.put(hash, peak);
-                                        peakCompList.add(peak);
-                                    }
-                                    else if (peak.getMagnitude() > peakComp.getMagnitude()) {
-                                        peakMap.remove(hash, peakComp);
-                                        peakMap.put(hash, peak);
-                                        peakCompList.remove(k);
-                                        peakCompList.add(peak);
-                                    }
-                                }
-                            }
+                    float threshold = 5;
+                    for (SpectralPeakProcessor.SpectralPeak sp : peakList) {
+                        if (sp.getMagnitude() >= threshold) {
+                            peakListFiltered.add(sp);
                         }
-                        j++;
                     }
-//                    logger.writeLogLine(peakList, i);
-//                }
-//                logger.writeLogLine(peakList, i);
+                    logger.writeLogLine(peakListFiltered, i);
+                }
+                else {
+//                    int j = 0;
+//
+//                    for (float bandSize : bandsSize) {
+//                        TimeBandPair timeBandPair = new TimeBandPair(i/timeGranularity, j);
+//                        int hash = timeBandPair.generateHash();
+////                        System.out.println("event:"+i+" band:"+j+" hash:"+hash);
+//                        List<SpectralPeakProcessor.SpectralPeak> peakCompList = peakMap.get(hash);
+//                        for (SpectralPeakProcessor.SpectralPeak peak : peakList) {
+//                            peak.setTimeStamp(i);
+//                            if (!isInBand(peak, j)) {
+//                                continue;
+//                            }
+//                            if (peakCompList.size() == 0) {
+//                                peakMap.put(hash, peak);
+//                            }
+//                            else {
+//                                for (int k = 0; k < peakCompList.size(); k++) {
+//                                    SpectralPeakProcessor.SpectralPeak peakComp = peakCompList.get(k);
+//                                    if (peakCompList.size() < bandSize) {
+//                                        peakMap.put(hash, peak);
+//                                        peakCompList.add(peak);
+//                                    }
+//                                    else if (peak.getMagnitude() > peakComp.getMagnitude()) {
+//                                        peakMap.remove(hash, peakComp);
+//                                        peakMap.put(hash, peak);
+//                                        peakCompList.remove(k);
+//                                        peakCompList.add(peak);
+//                                    }
+//                                }
+//                            }
+//                        }
+//                        j++;
+//                    }
+                    logger.writeLogLine(peakList, i);
+                }
+                logger.writeLogLine(peakList, i);
                 i++;
                 return true;
             }
