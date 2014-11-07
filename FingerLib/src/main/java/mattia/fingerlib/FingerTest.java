@@ -57,7 +57,6 @@ public class FingerTest {
             if (track.getName().compareTo(".DS_Store") == 0) continue;
             finGen.setTrack(track);
             peakMap = finGen.generateFingerprints(true, false);
-            return;
         }
         //generazione fingerprint delle tracce-ota (solitamente una!)
         for (File ota : otaDir) {

@@ -1,12 +1,8 @@
 package mattia.fingerlib;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,8 +12,6 @@ import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
 import be.tarsos.dsp.SpectralPeakProcessor;
-import be.tarsos.dsp.filters.HighPass;
-import be.tarsos.dsp.filters.IIRFilter;
 import be.tarsos.dsp.io.PipedAudioStream;
 import be.tarsos.dsp.io.TarsosDSPAudioInputStream;
 
@@ -34,7 +28,7 @@ public class PeakExtractor {
     public boolean emptyFilter;
     public String audioFileName;
     public boolean isOta;
-
+    public Multimap peakMap;
 
 
     public PeakExtractor(String audioFileName, float noiseFilter, boolean emptyFilter, boolean isOta) {
@@ -49,7 +43,7 @@ public class PeakExtractor {
         final int sampleRate = 22050;
         final int fftsize = 1024;
         final int overlap = fftsize/2; //25% overlap
-        final float[] bandsSize = {0.5f, 0.5f, 1, 1.5f, 1.5f, 1.5f, 1, 0.5f, 0.5f};
+        final float[] bandsSize = {0.5f, 0.5f, 1, 1.5f, 1.5f, 1.5f, 1, 1, 1};
         final float[] bandsSize2 = {1, 2.5f, 1.5f, 1};
 
         //set up oggetti: stream, dispatcher, spectralfollower
@@ -69,10 +63,12 @@ public class PeakExtractor {
         dispatcher.addAudioProcessor(spectralFollower);
 
         //peakcomparer
-        final PeakComparer comp = new PeakComparer();
+        final PeakMagnitudeComparer comp = new PeakMagnitudeComparer();
         //logger
         final PeakLogger logger = new PeakLogger(dirInfo.getLogDirPath()+audioFileName+".log", dirInfo.getPeakDirPath()+audioFileName+"_peaks.log", dirInfo.getrDirPath()+audioFileName+"_matches.log");
+        logger.initLogWriter(false);
         logger.writeIntro();
+        logger.initLogWriter(true);
 
         //audioprocessor custom per il detecting dei picchi
         dispatcher.addAudioProcessor(new AudioProcessor() {
@@ -95,7 +91,7 @@ public class PeakExtractor {
                 List<SpectralPeakProcessor.SpectralPeak> peakList;
                 List<SpectralPeakProcessor.SpectralPeak> peakListFiltered = new ArrayList<SpectralPeakProcessor.SpectralPeak>();
 
-                peakList = SpectralPeakProcessor.findWeightedPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), bandsSize2, 15, localMaxima, 10, 20);
+                peakList = SpectralPeakProcessor.findWeightedPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), bandsSize, 15, localMaxima, 10, 20);
 //                peakList = SpectralPeakProcessor.findPeaks(spectralFollower.getMagnitudes(), spectralFollower.getFrequencyEstimates(), localMaxima, 10, 20);
 
                 //filtering picchi in base al volume
@@ -112,18 +108,16 @@ public class PeakExtractor {
 //                else {
                     int j = 0;
 
-                    for (float bandSize : bandsSize2) {
-                        System.out.println("band:"+j);
-                        if (j != 3) {
-                            j++;
-                            continue;
-                        }
+                    for (float bandSize : bandsSize) {
                         TimeBandPair timeBandPair = new TimeBandPair(i/timeGranularity, j);
                         int hash = timeBandPair.generateHash();
 //                        System.out.println("event:"+i+" band:"+j+" hash:"+hash);
                         List<SpectralPeakProcessor.SpectralPeak> peakCompList = peakMap.get(hash);
                         for (SpectralPeakProcessor.SpectralPeak peak : peakList) {
-                            peak.setTimeStamp(i/timeGranularity);
+                            peak.setTimeStamp(i);
+                            if (!isInBand(peak, j)) {
+                                continue;
+                            }
                             if (peakCompList.size() == 0) {
                                 peakMap.put(hash, peak);
                             }
@@ -133,14 +127,12 @@ public class PeakExtractor {
                                     if (peakCompList.size() < bandSize) {
                                         peakMap.put(hash, peak);
                                         peakCompList.add(peak);
-                                        yes++;
                                     }
                                     else if (peak.getMagnitude() > peakComp.getMagnitude()) {
                                         peakMap.remove(hash, peakComp);
                                         peakMap.put(hash, peak);
                                         peakCompList.remove(k);
                                         peakCompList.add(peak);
-                                        no++;
                                     }
                                 }
                             }
@@ -157,7 +149,7 @@ public class PeakExtractor {
             @Override
             public void processingFinished() {
                 System.out.println("size peakMap:"+peakMap.size());
-                System.out.println("yes:"+yes+" no:"+no);
+//                System.out.println("yes:"+yes+" no:"+no);
                 logger.writeMapLog(getPeakMap());
                 java.util.Date date = new java.util.Date();
                 System.out.println("end of processing: "+ new Timestamp(date.getTime()));
@@ -165,6 +157,31 @@ public class PeakExtractor {
 
             public ArrayListMultimap getPeakMap() {
                 return peakMap;
+            }
+
+            public boolean isInBand2(SpectralPeakProcessor.SpectralPeak peak, int j) {
+                switch(j) {
+                    case 0: return peak.getFrequencyInHertz() >= 300 && peak.getFrequencyInHertz() < 1000;
+                    case 1: return peak.getFrequencyInHertz() >= 1000 && peak.getFrequencyInHertz() < 4000;
+                    case 2: return peak.getFrequencyInHertz() >= 4000 && peak.getFrequencyInHertz() < 7000;
+                    case 3: return peak.getFrequencyInHertz() >= 7000 && peak.getFrequencyInHertz() < 10000;
+                    default: return false;
+                }
+            }
+
+            public boolean isInBand(SpectralPeakProcessor.SpectralPeak peak, int j) {
+                switch(j) {
+                    case 0: return peak.getFrequencyInHertz() >= 300 && peak.getFrequencyInHertz() < 500;
+                    case 1: return peak.getFrequencyInHertz() >= 500 && peak.getFrequencyInHertz() < 1000;
+                    case 2: return peak.getFrequencyInHertz() >= 1000 && peak.getFrequencyInHertz() < 2000;
+                    case 3: return peak.getFrequencyInHertz() >= 2000 && peak.getFrequencyInHertz() < 3000;
+                    case 4: return peak.getFrequencyInHertz() >= 3000 && peak.getFrequencyInHertz() < 4000;
+                    case 5: return peak.getFrequencyInHertz() >= 4000 && peak.getFrequencyInHertz() < 5000;
+                    case 6: return peak.getFrequencyInHertz() >= 5000 && peak.getFrequencyInHertz() < 6000;
+                    case 7: return peak.getFrequencyInHertz() >= 6000 && peak.getFrequencyInHertz() < 7000;
+                    case 8: return peak.getFrequencyInHertz() >= 7000 && peak.getFrequencyInHertz() < 10000;
+                    default: return false;
+                }
             }
 
         });
@@ -175,7 +192,7 @@ public class PeakExtractor {
         if (p < 0 || p > 1)
             throw new IllegalArgumentException("Percentile out of range.");
 
-        final Comparator comp = new PeakComparer();
+        final Comparator comp = new PeakMagnitudeComparer();
 
         //	Sort the array in ascending order.
         sort(peaks, comp);

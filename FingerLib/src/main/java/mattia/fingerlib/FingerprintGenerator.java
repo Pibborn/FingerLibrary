@@ -2,11 +2,14 @@ package mattia.fingerlib;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+
+import be.tarsos.dsp.SpectralPeakProcessor;
 
 /*todo: serve un'idea migliore per togliere le righe di setup del logger da ogni metodo di fingerprinting-matching */
 
@@ -60,6 +63,7 @@ public class FingerprintGenerator {
         //estrazione picchi e scrittura del log (nascosta)
         PeakExtractor extractorNullFilter = new PeakExtractor(track.getName(), (float) 1.8, noiseFilter, matching);
         extractorNullFilter.extract(10);
+        Multimap<Integer, SpectralPeakProcessor.SpectralPeak> peakMap;
 
         //parsing del log
         List<Double>[] arr = logger.parseLogFile(dirInfo.getLogDirPath() + track.getName() + ".log");
@@ -68,6 +72,7 @@ public class FingerprintGenerator {
         List<Double> frequencyList = arr[2];
         List<Double> volumeList = arr[3];
 
+        //costruzione della hashmap, oppure matching
         if (!matching) return fillMap(timeList, binList, frequencyList);
         else return matchFingerprints(timeList, binList, frequencyList);
     }
@@ -79,8 +84,9 @@ public class FingerprintGenerator {
         logger.setLogPath(dirInfo.getLogDirPath() + track.getName() + ".log");
         logger.setPeakPath(dirInfo.getPeakDirPath() + track.getName() + "_peaks.log");
         logger.setrPath(dirInfo.getrDirPath() + track.getName() + "_matches.log");
-
+        logger.initPeakWriter(false);
         logger.writePeakIntro();
+        logger.initPeakWriter(true);
         for (int i = 0; i < timeList.size(); i++) {
             double frequency1 = frequencyList.get(i);
             int time1 = timeList.get(i).intValue();
@@ -108,9 +114,10 @@ public class FingerprintGenerator {
         LogHashGenerator logHashGenerator = new LogHashGenerator(track.getName());
         logger.setLogPath(dirInfo.getLogDirPath() + track.getName() + ".log");
         logger.setPeakPath(dirInfo.getPeakDirPath() + track.getName() + "_peaks.log");
-        logger.setrPath(dirInfo.getrDirPath() + track.getName() + "_matches.log");
-
+        logger.setrPath(dirInfo.getrDirPath() + track.getName() + "_histogram.log");
+        logger.initPeakWriter(false);
         logger.writePeakIntro();
+        logger.initLogWriter(true);
         for (int i = 0; i < timeList.size(); i++) {
             double frequency1 = frequencyList.get(i);
             int time1 = timeList.get(i).intValue();
@@ -143,17 +150,29 @@ public class FingerprintGenerator {
 
     public int trackScore() {
         int[] matchArr = new int[1000000]; //todo
+        DirectoryInfo dirInfo = DirectoryInfo.getInstance();
+        PeakLogger logger = new PeakLogger(dirInfo.getLogDirPath(), dirInfo.getPeakDirPath(), dirInfo.getrDirPath());
+        logger.setRPath(dirInfo.getrDirPath()+track.getName()+"_histogram.log");
+        logger.initRWriter(false);
+        logger.writeRIntro();
+        logger.initRWriter(true);
         for (TimePair timePair : matchMap.get(track.getName())) {
             int timeDifference = timePair.getTime2() - timePair.getTime1();
-            if (timeDifference > 0) {
+            if (timeDifference >= 0) {
                 matchArr[timeDifference]++;
+                logger.writeHistogramLine(timeDifference);
             }
         }
+        logger.closeRLog();
         int max = 0;
+        int maxIndex = 0;
         for(int i = 0; i < matchArr.length; i++) {
-            if (matchArr[i] > max) max = matchArr[i];
+            if (matchArr[i] > max) {
+                max = matchArr[i];
+                maxIndex = i;
+            }
         }
-        System.out.println(track.getName()+", score: "+max);
+        System.out.println(track.getName()+", score: "+max+" location: "+maxIndex);
         return max;
     }
 }
