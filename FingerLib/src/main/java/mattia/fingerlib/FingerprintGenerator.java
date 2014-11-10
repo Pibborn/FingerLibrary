@@ -175,4 +175,8 @@ public class FingerprintGenerator {
         System.out.println(track.getName()+", score: "+max+" location: "+maxIndex);
         return max;
     }
+
+    public boolean findHistogramPeak() {
+        return false;
+    }
 }

@@ -3,8 +3,11 @@ package mattia.fingerlib;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Collections.max;
@@ -52,11 +55,13 @@ public class FingerTest {
 
         FingerprintGenerator finGen = new FingerprintGenerator();
 
+        int db_size = 0;
         //generazione fingerprint delle tracce-db
         for (File track : audioDir) {
             if (track.getName().compareTo(".DS_Store") == 0) continue;
             finGen.setTrack(track);
             peakMap = finGen.generateFingerprints(true, false);
+            db_size++;
         }
         //generazione fingerprint delle tracce-ota (solitamente una!)
         for (File ota : otaDir) {
@@ -65,69 +70,53 @@ public class FingerTest {
             timeMatchMap = finGen.generateFingerprints(true, true);
         }
         //generazione score delle tracce-db rispetto all'ota
+        int[] scores = new int[db_size];
+        String[] trackNames = new String[db_size];
+        boolean[] histoPeak = new boolean[db_size];
         int max = 0;
+        int i = 0;
         for (File track : audioDir) {
             if (track.getName().compareTo(".DS_Store") == 0) continue;
+            trackNames[i] = track.getName();
             finGen.setTrack(track);
             int score = finGen.trackScore();
+            scores[i] = score;
+            boolean hasPeak = finGen.findHistogramPeak();
+            histoPeak[i] = hasPeak;
             if (score > max) {
                 max = score;
                 match = track.getName();
             }
+            i++;
+        }
+        double[] sorted_scores = new double[db_size];
+        for (int j = 0; j < db_size; j++) {
+            sorted_scores[j] = (double) scores[j];
+        }
+        Arrays.sort(sorted_scores);
+        double next_to_max = sorted_scores[db_size-2];
+        double difference = max - next_to_max;
+        difference *= difference;
+        System.out.println("quadrato della differenza: "+difference);
+        Percentile percentileCalculator = new Percentile();
+        double filter_value = percentileCalculator.evaluate(sorted_scores, 80);
+        System.out.println("\n75mo percentile dei punteggi: "+filter_value);
+//        int times = 0;
+//        for (int j = 0; j < db_size; j++) {
+//            if (scores[j] > filter_value) {
+//                times++;
+//            }
+//        }
+        if (difference < max) {
+            for (int j = 0; j < db_size; j++) {
+                if (histoPeak[j]) {
+                    match = trackNames[j]; //todo: cosa succede se ho percepito picchi su più istogrammi?
+                    return;
+                }
+            }
+            match = "no match!";
         }
         System.out.println("previsione di match: "+ match);
 
-//        int[] timeArr = new int[1000000];
-//        for (File track : audioDir) {
-//            for (TimePair timePair : timeMatchMap.get(track.getName())) {
-//                if (track.getName().compareTo("ota_punk_3.wav") != 0) break; //voglio matchare ota_rec
-//                int timeDifference = timePair.getTime2() - timePair.getTime1();
-//                if (timeDifference > 0) {
-//                    timeArr[timeDifference]++;
-//                }
-//            }
-//        }
-//        int max = 0;
-//        int occ = 0;
-//        for (int i = 0; i < timeArr.length; i++) {
-//            if (timeArr[i] > occ) {
-//                max = i;
-//                occ = timeArr[i];
-//            }
-//        }
-//        System.out.println("max time: "+ max +" occurrences: "+occ);
-
-//        for (File track : audioDir) {
-//            int i = 0;
-//            for (TimePair timePair : timeMatchMap.get(track.getName())) {
-//                if (track.getName().compareTo("ota_punk_3.wav") != 0) break; //voglio matchare ota_rec
-//                int timeDifference = timePair.getTime2() - timePair.getTime1();
-//                if (timeDifference > 0) {
-//                    timeArr[i] = timeDifference;
-//                }
-//                i++;
-//            }
-//        }
-//        logger.writeHistogramLog(timeArr);
-
-        //prova histogram
-//        System.out.println(times);
-//        System.out.println(dbMatchList.size());
-//        System.out.println(peakMap.keySet().size());
-//        //grafico temporale dei match
-//        plotter.setxAxisList(dbMatchList);
-//        plotter.setyAxisList(otaMatchList);
-//        plotter.setImgPath("/Users/tesi/Desktop/FingerLibrary/matchplot/");
-//        plotter.generateScatterplot();
-
-//        int i = 0;
-//        List<Integer> matchList = new ArrayList<Integer>();
-//        for (Integer key : peakMap.keySet()) {
-//            System.out.print("hash "+key+": ");
-//            for (Integer hash : peakMap.get(key)) {
-//                System.out.print(hash +" ");
-//            }
-//            System.out.println("");
-//        }
     }
 }
