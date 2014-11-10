@@ -45,8 +45,8 @@ public class PeakExtractor {
         final int fftsize = 1024;
         final int overlap = fftsize/2; //25% overlap
 //        final float[] bandsSize = {0.5f, 0.5f, 1, 1.5f, 1.5f, 1.5f, 1, 1, 1};
-//        final float[] bandsSize = {1, 1, 1, 1, 1, 1, 1, 1, 1};
-        final float[] bandsSize = {0, 3, 0, 0, 0, 0, 0, 0, 0};
+        final float[] bandsSize = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+//        final float[] bandsSize = {0, 3, 0, 0, 0, 0, 0, 0, 0};
 
         final float[] bandsSize2 = {1, 2.5f, 2.5f, 1};
 

@@ -4,7 +4,7 @@ package mattia.fingerlib;
  * Created by mattia cerrato on 20/10/14.
  */
 public class DirectoryInfo {
-    private final String audioDirPath = "/Users/tesi/Desktop/audio/";
+    private final String audioDirPath = "/Users/tesi/Desktop/radio/";
     private final String logDirPath = "/Users/tesi/Desktop/FingerLibrary/logs/";
     private final String rDirPath = "/Users/tesi/Desktop/FingerLibrary/rlogs/";
     private final String imgDirPath = "/Users/tesi/Desktop/FingerLibrary/img/";
