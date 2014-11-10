@@ -12,9 +12,7 @@ import java.util.List;
 
 import static java.util.Collections.max;
 import static java.util.Collections.sort;
-/* todo: cambiare i riferimenti alle cartelle e i costruttori utilizzando DirectoryInfo
-   todo: non l'ho cambiata in PeakLogger perchè quello cambia dinamicamente prendendo proprio i nomi dei file. va bene?
- */
+
 /**
  * Created by mattia cerrato on 29/09/14.
  */
@@ -81,7 +79,7 @@ public class FingerTest {
             finGen.setTrack(track);
             int score = finGen.trackScore();
             scores[i] = score;
-            boolean hasPeak = finGen.findHistogramPeak();
+            boolean hasPeak = finGen.findHistogramPeak(true);
             histoPeak[i] = hasPeak;
             if (score > max) {
                 max = score;
@@ -100,23 +98,22 @@ public class FingerTest {
         System.out.println("quadrato della differenza: "+difference);
         Percentile percentileCalculator = new Percentile();
         double filter_value = percentileCalculator.evaluate(sorted_scores, 80);
-        System.out.println("\n75mo percentile dei punteggi: "+filter_value);
+        System.out.println("80mo percentile dei punteggi: "+filter_value);
 //        int times = 0;
 //        for (int j = 0; j < db_size; j++) {
 //            if (scores[j] > filter_value) {
 //                times++;
 //            }
 //        }
-        if (difference < max) {
+//        if (difference < max) {
             for (int j = 0; j < db_size; j++) {
                 if (histoPeak[j]) {
                     match = trackNames[j]; //todo: cosa succede se ho percepito picchi su più istogrammi?
-                    return;
+                    break;
                 }
+                match = "no match!";
             }
-            match = "no match!";
-        }
+//        }
         System.out.println("previsione di match: "+ match);
-
     }
 }

@@ -21,6 +21,10 @@ public class FingerprintGenerator {
     private ListMultimap<Integer, BitSet> fingerMap;
     private ListMultimap<String, TimePair> matchMap;
     public File track;
+    private int[] matchArr;
+    private int max;
+    private int maxIndex;
+    private int nextToMax;
 
     public FingerprintGenerator() {
         this.fingerMap = ArrayListMultimap.create();
@@ -41,6 +45,10 @@ public class FingerprintGenerator {
 
     public void setTrack(File track) {
         this.track = track;
+        this.matchArr = new int[10000];
+        this.max = 0;
+        this.maxIndex = 0;
+        this.nextToMax = 0;
     }
 
     public File getTrack() {
@@ -149,7 +157,6 @@ public class FingerprintGenerator {
     }
 
     public int trackScore() {
-        int[] matchArr = new int[1000000]; //todo
         DirectoryInfo dirInfo = DirectoryInfo.getInstance();
         PeakLogger logger = new PeakLogger(dirInfo.getLogDirPath(), dirInfo.getPeakDirPath(), dirInfo.getrDirPath());
         logger.setRPath(dirInfo.getrDirPath()+track.getName()+"_histogram.log");
@@ -164,10 +171,9 @@ public class FingerprintGenerator {
             }
         }
         logger.closeRLog();
-        int max = 0;
-        int maxIndex = 0;
         for(int i = 0; i < matchArr.length; i++) {
             if (matchArr[i] > max) {
+                nextToMax = max;
                 max = matchArr[i];
                 maxIndex = i;
             }
@@ -176,7 +182,15 @@ public class FingerprintGenerator {
         return max;
     }
 
-    public boolean findHistogramPeak() {
-        return false;
+    public boolean findHistogramPeak(boolean debug) {
+        int squareDifference = max * max - nextToMax * nextToMax;
+        int differenceSquare = (max - nextToMax) * (max - nextToMax);
+        if(debug) {
+            System.out.println("Differenza tra i quadrati: "+((max * max) - (nextToMax * nextToMax)));
+            System.out.println("Quadrato della differenza: "+((max - nextToMax) * (max - nextToMax)));
+            System.out.println("---");
+        }
+        if (differenceSquare > max*2) return true;
+        else return false;
     }
 }
