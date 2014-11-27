@@ -23,7 +23,7 @@ public class SongMap extends HashMap{
         DirectoryInfo dirInfo = DirectoryInfo.getInstance();
         File audioDirFile = new File(dirInfo.getAudioDirPath());
         File[] audioDir = audioDirFile.listFiles();
-        songArr = new String[audioDir.length-1];
+        songArr = new String[audioDir.length];
         int i = 0;
         for (File track : audioDir) {
             if (track.getName().compareTo(".DS_Store") == 0) continue;

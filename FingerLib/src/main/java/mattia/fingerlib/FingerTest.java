@@ -24,18 +24,21 @@ public class FingerTest {
 
     public static void main(String[] args) {
 
+        // set to TRUE if all TestCases refer to the same set of audio files
+        boolean sameAudioSet = true;
+
         TestLogParser testLogParser = new TestLogParser();
         List<TestCase> testList = null;
         try {
-            testList = testLogParser.generateTestList(true);
+            testList = testLogParser.generateTestList(false);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         PrintWriter testResultWriter = null;
 
         //il nome del file-risultato di log è la descrizione del primo file di test
-        String resultFilePath = testList.get(0).getDescription()+".log";
+        String resultFilePath = testList.get(0).getOutPath() + testList.get(0).getDescription()+".log";
+        System.out.println("logpath:" +resultFilePath);
         try {
             testResultWriter = new PrintWriter(new BufferedWriter(new FileWriter(resultFilePath, true)));
         } catch (IOException e) {
@@ -43,8 +46,15 @@ public class FingerTest {
         }
 
         DirectoryInfo dirInfo = DirectoryInfo.getInstance();
+        boolean first = true;
 
+        FingerprintGenerator finGen = null;
 
+        if(sameAudioSet) {
+            finGen = new FingerprintGenerator();
+        }
+
+        int db_size = 0;
         for(TestCase test : testList) {
             dirInfo.setAudioDirPath(test.getAudioPath());
             dirInfo.setOtaDirPath(test.getOtaPath());
@@ -53,8 +63,6 @@ public class FingerTest {
 //            PlotImageGenerator plotter = new PlotImageGenerator(dirInfo.getImgDirPath(), dirInfo.getAudioDirPath(), dirInfo.getLogDirPath());
 //            plotter.setAudioPath(dirInfo.getAudioDirPath());
 //            plotter.setLogPath(dirInfo.getLogDirPath());
-
-
 
             PeakLogger logger = new PeakLogger(dirInfo.getLogDirPath(), dirInfo.getPeakDirPath(), dirInfo.getrDirPath());
 
@@ -77,20 +85,36 @@ public class FingerTest {
             SongMap songMap = SongMap.getInstance();
             songMap.generateArr();
 
-            FingerprintGenerator finGen = new FingerprintGenerator();
+            if (!sameAudioSet) {
+                finGen = new FingerprintGenerator();
+            }
 
             String expectedMatch = test.getExpectedMatch();
+            String expectedMatchNoFileFormat = expectedMatch.replace(".mp3", "");
+            expectedMatchNoFileFormat = expectedMatchNoFileFormat.replace(".wav", "");
             boolean hasAMatch = false;
-            int db_size = 0;
+
             //generazione fingerprint delle tracce-db
-            for (File track : audioDir) {
+             db_size = 0;
+             for (File track : audioDir) {
                 if (track.getName().compareTo(".DS_Store") == 0) continue;
                 if (track.getName().contains(".sh")) continue;
-                if (expectedMatch.compareTo(track.getName()) == 0) hasAMatch = true; //allora un match andrebbe trovato
+                String trackNameNoFileFormat = track.getName().replace(".wav", "");
+                trackNameNoFileFormat = trackNameNoFileFormat.replace(".mp3", "");
+//                System.out.println("expectednoformat:"+expectedMatchNoFileFormat);
+//                System.out.println("tracknamenoformat:"+trackNameNoFileFormat);
+
+                if (expectedMatchNoFileFormat.compareTo(trackNameNoFileFormat) == 0) {
+                    hasAMatch = true; //allora un match andrebbe trovato
+                }
                 finGen.setTrack(track);
-                peakMap = finGen.generateFingerprints(true, false);
+                if (first || !sameAudioSet) {
+                    peakMap = finGen.generateFingerprints(true, false);
+                }
                 db_size++;
             }
+            first = false;
+
             //generazione fingerprint delle tracce-ota (solitamente una!)
             for (File ota : otaDir) {
                 if (ota.getName().compareTo(".DS_Store") == 0) continue;
@@ -118,18 +142,18 @@ public class FingerTest {
                 }
                 i++;
             }
-            double[] sorted_scores = new double[db_size];
-            for (int j = 0; j < db_size; j++) {
-                sorted_scores[j] = (double) scores[j];
-            }
-            Arrays.sort(sorted_scores);
-            double next_to_max = sorted_scores[db_size-2];
-            double difference = max - next_to_max;
-            difference *= difference;
-            System.out.println("quadrato della differenza: "+difference);
-            Percentile percentileCalculator = new Percentile();
-            double filter_value = percentileCalculator.evaluate(sorted_scores, 80);
-            System.out.println("80mo percentile dei punteggi: "+filter_value);
+//            double[] sorted_scores = new double[db_size];
+//            for (int j = 0; j < db_size; j++) {
+//                sorted_scores[j] = (double) scores[j];
+//            }
+//            Arrays.sort(sorted_scores);
+//            double next_to_max = sorted_scores[db_size-2];
+//            double difference = max - next_to_max;
+//            difference *= difference;
+//            System.out.println("quadrato della differenza: "+difference);
+//            Percentile percentileCalculator = new Percentile();
+//            double filter_value = percentileCalculator.evaluate(sorted_scores, 80);
+//            System.out.println("80mo percentile dei punteggi: "+filter_value);
 //        int times = 0;
 //        for (int j = 0; j < db_size; j++) {
 //            if (scores[j] > filter_value) {
@@ -140,30 +164,42 @@ public class FingerTest {
             for (int j = 0; j < db_size; j++) {
                 if (histoPeak[j]) {
                     match = trackNames[j]; //todo: cosa succede se ho percepito picchi su più istogrammi?
-                    break;
+                    if (scores[j] >= max) {
+                        break;
+                    }
                 }
                 match = "no match!";
             }
 //        }
-            System.out.println("previsione di match: "+ match);
+            String matchNoFileFormat = match.replace(".wav", "");
+            matchNoFileFormat = matchNoFileFormat.replace(".mp3", "");
+
+            System.out.println("previsione di match: "+ matchNoFileFormat);
             File outTestFile = new File(test.getOutPath()+test.getTestName());
             PrintWriter writer = null;
-            if (hasAMatch && (match.compareTo(expectedMatch) == 0)) {
+            if (hasAMatch && (matchNoFileFormat.compareTo(expectedMatchNoFileFormat) == 0)) {
                 System.out.println(test.getTestName() + ": success (found the right match)");
                 testResultWriter.println(test.getTestName()+": success (found the right match)");
             }
-            else if(!hasAMatch && (match.compareTo("no match!") == 0)) {
+            else if(!hasAMatch && (matchNoFileFormat.compareTo("no match!") == 0)) {
                 System.out.println(test.getTestName() + ": success (no match)");
                 testResultWriter.println(test.getTestName()+": success (no match)");
             }
-            else if(!hasAMatch && (match.compareTo("no match!") != 0)) {
+            else if(!hasAMatch && (matchNoFileFormat.compareTo("no match!") != 0)) {
                 System.out.println(test.getTestName() + ": failure (false positive)");
                 testResultWriter.println(test.getTestName()+": failure (false positive)");
             }
-            else if(hasAMatch && (match.compareTo(expectedMatch) != 0)) {
+            else if(hasAMatch && (matchNoFileFormat.compareTo(expectedMatchNoFileFormat) != 0)) {
                 System.out.println(test.getTestName() + ": failure (matched the wrong track)");
-                testResultWriter.println(test.getTestName()+": failure (matched the wrong track)");
+                testResultWriter.print(test.getTestName()+": failure (matched the wrong track)");
+                if (match.compareTo("no match") == 0) {
+                    testResultWriter.println(test.getTestName()+": (found no match but there was)\n ");
+                } else {
+                    testResultWriter.println();
+                }
             }
+
+            if (sameAudioSet) finGen.resetMatchMap();
         }
         testResultWriter.close();
     }

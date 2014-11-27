@@ -190,7 +190,16 @@ public class FingerprintGenerator {
             System.out.println("Quadrato della differenza: "+((max - nextToMax) * (max - nextToMax)));
             System.out.println("---");
         }
-        if (differenceSquare > max*2) return true;
+        if (differenceSquare > max*2) {
+            if (debug) System.out.println("Found a peak in "+track.getName());
+            return true;
+        }
         else return false;
+    }
+
+    public void resetMatchMap() {
+        this.max = 0;
+        this.maxIndex = 0;
+        this.matchMap = ArrayListMultimap.create();
     }
 }
